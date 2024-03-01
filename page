@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Annotation Tool</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        /* CSS for styling the page */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        #pdfContainer {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            padding: 20px;
+        }
+        .pdfCard {
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            overflow: hidden;
+            width: 300px;
+        }
+        .pdfCard img {
+            width: 100%;
+            height: auto;
+        }
+        .pdfCardActions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background-color: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+    <div id="pdfContainer"></div>
+    <input type="file" id="fileInput" multiple>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.12.313/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/4.5.0/fabric.min.js"></script>
+    <script>
+        // JavaScript for handling PDF rendering and annotation
+        const pdfContainer = document.getElementById('pdfContainer');
+        const fileInput = document.getElementById('fileInput');
+
+        // Function to render uploaded PDFs
+        async function renderPDF(file) {
+            const pdf = await pdfjsLib.getDocument(file).promise;
+            const page = await pdf.getPage(1);
+            const scale = 1.5;
+            const viewport = page.getViewport({ scale });
+
+            // Create canvas element
+            const canvas = document.createElement('canvas');
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+
+            // Render PDF on canvas
+            const context = canvas.getContext('2d');
+            const renderContext = {
+                canvasContext: context,
+                viewport: viewport
+            };
+            await page.render(renderContext).promise;
+
+            // Append canvas to PDF container
+            const pdfCard = document.createElement('div');
+            pdfCard.classList.add('pdfCard');
+            pdfCard.appendChild(canvas);
+
+            // Add annotation button
+            const actionsDiv = document.createElement('div');
+            actionsDiv.classList.add('pdfCardActions');
+            const annotateBtn = document.createElement('button');
+            annotateBtn.innerHTML = '<i class="fas fa-pen"></i> Annotate';
+            annotateBtn.addEventListener('click', () => {
+                annotatePDF(canvas);
+            });
+            actionsDiv.appendChild(annotateBtn);
+            pdfCard.appendChild(actionsDiv);
+
+            pdfContainer.appendChild(pdfCard);
+        }
+
+        // Function to handle annotation
+        function annotatePDF(canvas) {
+            const fabricCanvas = new fabric.Canvas(canvas, {
+                isDrawingMode: true
+            });
+            fabricCanvas.freeDrawingBrush.width = 5;
+            fabricCanvas.freeDrawingBrush.color = 'black';
+        }
+
+        // Event listener for file input change
+        fileInput.addEventListener('change', () => {
+            const files = fileInput.files;
+            if (files.length > 0) {
+                Array.from(files).forEach(file => {
+                    renderPDF(file);
+                });
+            }
+        });
+    </script>
+</body>
+</html>
